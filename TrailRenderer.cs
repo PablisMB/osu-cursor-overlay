@@ -172,6 +172,17 @@ public sealed class TrailRenderer : IDisposable
         }
     }
 
+    public bool HasActiveTrail()
+    {
+        for (int i = 0; i < MaxSprites; i++)
+        {
+            var p = _parts[i];
+            if (p.InvalidationID != -1 && (_time - p.Time) < 1f)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// Writes a new part into the circular buffer.
     /// Mirrors addPart() from osu!
