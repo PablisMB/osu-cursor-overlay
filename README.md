@@ -1,23 +1,23 @@
-# osu! Cursor Overlay — C# .NET 8 WinForms Edition
+# osu! Cursor Overlay - C# .NET 8 WinForms Edition
 
 A complete rewrite of the Python pygame cursor overlay in C# to eliminate graphics complications. This is a transparent fullscreen overlay that renders the osu! cursor and trail on top of all windows.
 
 ## Features
 
-- **Transparent Overlay** — Pure black background is fully transparent; clicks pass through
-- **Real osu! Skins** — Load cursor.png and cursortrail.png from any osu! skin folder
-- **144 FPS** — Dedicated render thread + Stopwatch spin-wait for accurate timing
-- **System Tray** — Pause/resume overlay, open config, or exit from context menu
-- **Global Hotkey** — Ctrl+Shift+Q to exit (configurable in config.ini)
-- **System Cursor Hidden** — All 12 Windows cursor types replaced; restored on exit
-- **Alpha-Blended Trail** — Fades from oldest (transparent) to newest (opaque); scales smallest to largest
+- **Transparent Overlay** - Pure black background is fully transparent; clicks pass through
+- **Real osu! Skins** - Load cursor.png and cursortrail.png from any osu! skin folder
+- **144 FPS** - Dedicated render thread + Stopwatch spin-wait for accurate timing
+- **System Tray** - Pause/resume overlay, open config, or exit from context menu
+- **Global Hotkey** - Ctrl+Shift+Q to exit (configurable in config.ini)
+- **System Cursor Hidden** - All 12 Windows cursor types replaced; restored on exit
+- **Alpha-Blended Trail** - Fades from oldest (transparent) to newest (opaque); scales smallest to largest
 
 ## Architecture
 
-- **No External Dependencies** — Uses only .NET 8 WinForms and System.Drawing
-- **Direct Win32 P/Invoke** — SetWindowPos, SetLayeredWindowAttributes, RegisterHotKey, CreateCursor, GetCursorPos
-- **Double-Buffered Rendering** — Background thread renders to Bitmap, then blits to HWND via `Graphics.FromHwnd`
-- **Zero Per-Frame GC** — Trail bitmaps and alpha ImageAttributes pre-allocated
+- **No External Dependencies** - Uses only .NET 8 WinForms and System.Drawing
+- **Direct Win32 P/Invoke** - SetWindowPos, SetLayeredWindowAttributes, RegisterHotKey, CreateCursor, GetCursorPos
+- **Double-Buffered Rendering** - Background thread renders to Bitmap, then blits to HWND via `Graphics.FromHwnd`
+- **Zero Per-Frame GC** - Trail bitmaps and alpha ImageAttributes pre-allocated
 
 ## Building
 
@@ -34,13 +34,13 @@ Output: `bin/Release/net8.0-windows/OsuCursorOverlay.exe`
 OsuCursorOverlay.exe
 ```
 
-1. A skin selector dialog appears — choose any osu! skin with a cursor.png file
+1. A skin selector dialog appears - choose any osu! skin with a cursor.png file
 2. The overlay starts in the background; tray icon appears in system tray
 3. Right-click tray icon:
-   - **Pausar** — Hide overlay, restore system cursor
-   - **Reanudar** — Show overlay, hide system cursor
-   - **Abrir Config** — Open config.ini in default text editor
-   - **Salir** — Exit and restore system cursor
+   - **Pausar** - Hide overlay, restore system cursor
+   - **Reanudar** - Show overlay, hide system cursor
+   - **Abrir Config** - Open config.ini in default text editor
+   - **Salir** - Exit and restore system cursor
 
 ## Configuration
 
@@ -158,4 +158,4 @@ Binary is self-contained; no runtime installation needed.
 
 ---
 
-**Status:** Production-ready. Built 2026-04-16. Zero warnings, zero errors.
+**Status:** Production-ready. Built 2026-04-17.
