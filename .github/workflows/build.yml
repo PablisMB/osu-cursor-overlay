@@ -27,6 +27,7 @@ jobs:
     - name: Submit to SignPath
       shell: pwsh
       run: |
+        Install-Module -Name SignPath -Force
         Submit-SigningRequest `
           -InputArtifactPath "bin/Release/net8.0-windows/OsuCursorOverlay.exe" `
           -ApiToken "${{ secrets.SIGNPATH_API_TOKEN }}" `
