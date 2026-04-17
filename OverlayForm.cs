@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 
 namespace OsuCursorOverlay;
 
@@ -58,6 +59,10 @@ public sealed class OverlayForm : Form
         ConfigureOverlayWindow();
         RegisterExitHotkey();
         BuildTrayIcon();
+
+        // Save the current skin name to config so it loads next time
+        var configPath = Path.Combine(AppContext.BaseDirectory, "config.ini");
+        ConfigManager.SaveSkinName(configPath, _skinName);
 
         // Spawn watchdog here so we can pass the overlay HWND.
         // The watchdog will restore the system cursor if we hang or are force-killed.
@@ -316,6 +321,11 @@ public sealed class OverlayForm : Form
         _trayMenu = new ContextMenuStrip();
         _trayMenu.Items.Add(new ToolStripMenuItem("Pausar", null, OnTrayPauseResume));
         _trayMenu.Items.Add(new ToolStripSeparator());
+        var autoStartItem = new ToolStripMenuItem("Iniciar con Windows", null, OnTrayAutoStart)
+        {
+            Checked = IsAutoStartEnabled()
+        };
+        _trayMenu.Items.Add(autoStartItem);
         _trayMenu.Items.Add(new ToolStripMenuItem("Abrir Config", null, OnTrayOpenConfig));
         _trayMenu.Items.Add(new ToolStripMenuItem("Salir", null, OnTrayExit));
 
@@ -393,6 +403,17 @@ public sealed class OverlayForm : Form
         }
     }
 
+    private void OnTrayAutoStart(object? sender, EventArgs e)
+    {
+        bool enabled = !IsAutoStartEnabled();
+        SetAutoStartWithWindows(enabled);
+
+        if (_trayMenu?.Items.Cast<ToolStripItem>().FirstOrDefault(x => x.Text == "Iniciar con Windows") is ToolStripMenuItem item)
+        {
+            item.Checked = enabled;
+        }
+    }
+
     private void OnTrayExit(object? sender, EventArgs e)
     {
         Shutdown();
@@ -430,5 +451,44 @@ public sealed class OverlayForm : Form
         }
 
         base.Dispose(disposing);
+    }
+
+    private void SetAutoStartWithWindows(bool enabled)
+    {
+        try
+        {
+            string exePath = Application.ExecutablePath;
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
+            {
+                if (key != null)
+                {
+                    if (enabled)
+                        key.SetValue("OsuCursorOverlay", exePath);
+                    else
+                        key.DeleteValue("OsuCursorOverlay", false);
+                }
+            }
+        }
+        catch
+        {
+            // Ignore registry errors
+        }
+    }
+
+    private bool IsAutoStartEnabled()
+    {
+        try
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", false))
+            {
+                if (key != null)
+                    return key.GetValue("OsuCursorOverlay") != null;
+            }
+        }
+        catch
+        {
+            // Ignore registry errors
+        }
+        return false;
     }
 }

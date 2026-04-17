@@ -38,6 +38,10 @@ internal static class Program
             return;
         }
 
+        // Load config
+        var configPath = Path.Combine(AppContext.BaseDirectory, "config.ini");
+        var settings = ConfigManager.Load(configPath);
+
         // List available skins
         var skins = SkinDiscovery.ListSkins(skinsDir);
         if (skins.Count == 0)
@@ -50,20 +54,33 @@ internal static class Program
             return;
         }
 
-        // Show skin selector
-        using var selectorForm = new SkinSelectorForm(skinsDir, skins);
-        if (selectorForm.ShowDialog() != DialogResult.OK)
-            return;
+        string selectedSkinName = "";
+        string selectedSkinPath = "";
 
-        var selectedSkinName = selectorForm.SelectedSkinName;
-        var selectedSkinPath = selectorForm.SelectedSkinPath;
+        // Try to use last saved skin
+        if (!string.IsNullOrEmpty(settings.LastSkinName))
+        {
+            var lastSkinPath = Path.Combine(skinsDir, settings.LastSkinName);
+            if (Directory.Exists(lastSkinPath) && File.Exists(Path.Combine(lastSkinPath, "cursor.png")))
+            {
+                selectedSkinName = settings.LastSkinName;
+                selectedSkinPath = lastSkinPath;
+            }
+        }
 
-        if (string.IsNullOrEmpty(selectedSkinName) || string.IsNullOrEmpty(selectedSkinPath))
-            return;
+        // If no valid last skin, show selector
+        if (string.IsNullOrEmpty(selectedSkinName))
+        {
+            using var selectorForm = new SkinSelectorForm(skinsDir, skins);
+            if (selectorForm.ShowDialog() != DialogResult.OK)
+                return;
 
-        // Load config
-        var configPath = Path.Combine(AppContext.BaseDirectory, "config.ini");
-        var settings = ConfigManager.Load(configPath);
+            selectedSkinName = selectorForm.SelectedSkinName;
+            selectedSkinPath = selectorForm.SelectedSkinPath;
+
+            if (string.IsNullOrEmpty(selectedSkinName) || string.IsNullOrEmpty(selectedSkinPath))
+                return;
+        }
 
         // NOTE: Watchdog is spawned from OverlayForm.OnLoad where we have the HWND.
 

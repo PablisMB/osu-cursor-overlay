@@ -15,6 +15,8 @@ public sealed class AppSettings
     public int TargetFps { get; set; } = 144;
     public bool HideSystemCursor { get; set; } = true;
     public string ExitHotkey { get; set; } = "ctrl+shift+q";
+    public bool AutoStartWithWindows { get; set; } = false;
+    public string LastSkinName { get; set; } = "";
 
     // Parsed from ExitHotkey
     public Keys HotkeyVKey { get; set; }
@@ -35,6 +37,8 @@ public static class ConfigManager
         target_fps = 144
         hide_system_cursor = true
         exit_hotkey = ctrl+shift+q
+        auto_start_with_windows = false
+        last_skin_name =
         """;
 
     public static AppSettings Load(string path)
@@ -60,7 +64,9 @@ public static class ConfigManager
             TrailSpacing = float.Parse(ReadValue(content, "cursor", "trail_spacing") ?? "1.0", CultureInfo.InvariantCulture),
             TargetFps = int.Parse(ReadValue(content, "system", "target_fps") ?? "144"),
             HideSystemCursor = bool.Parse(ReadValue(content, "system", "hide_system_cursor") ?? "true"),
-            ExitHotkey = ReadValue(content, "system", "exit_hotkey") ?? "ctrl+shift+q"
+            ExitHotkey = ReadValue(content, "system", "exit_hotkey") ?? "ctrl+shift+q",
+            AutoStartWithWindows = bool.Parse(ReadValue(content, "system", "auto_start_with_windows") ?? "false"),
+            LastSkinName = ReadValue(content, "system", "last_skin_name") ?? ""
         };
 
         ParseHotkey(settings);
@@ -135,5 +141,43 @@ public static class ConfigManager
 
         settings.HotkeyModifiers = modifiers;
         settings.HotkeyVKey = vkey ?? Keys.Q;
+    }
+
+    public static void SaveSkinName(string path, string skinName)
+    {
+        if (!File.Exists(path))
+            return;
+
+        var content = File.ReadAllText(path);
+        var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+
+        bool inSystemSection = false;
+        bool found = false;
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            var trimmed = lines[i].Trim();
+
+            if (trimmed == "[system]")
+            {
+                inSystemSection = true;
+                continue;
+            }
+
+            if (inSystemSection && trimmed.StartsWith('['))
+                inSystemSection = false;
+
+            if (inSystemSection && trimmed.StartsWith("last_skin_name"))
+            {
+                lines[i] = $"last_skin_name = {skinName}";
+                found = true;
+                break;
+            }
+        }
+
+        if (!found && inSystemSection)
+            lines.Add($"last_skin_name = {skinName}");
+
+        File.WriteAllText(path, string.Join("\n", lines));
     }
 }
