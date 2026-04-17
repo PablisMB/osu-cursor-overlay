@@ -44,3 +44,11 @@ jobs:
         name: signed-exe
         path: bin/Release/net8.0-windows/OsuCursorOverlay.exe
 
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: bin/Release/net8.0-windows/OsuCursorOverlay.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
