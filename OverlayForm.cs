@@ -17,6 +17,7 @@ public sealed class OverlayForm : Form
     private Thread? _renderThread;
     private volatile bool _stopRender = false;
     private volatile bool _paused = false;
+    private Point _lastRenderPos = new Point(-1, -1);
 
     private NotifyIcon? _notifyIcon;
     private ContextMenuStrip? _trayMenu;
@@ -184,6 +185,10 @@ public sealed class OverlayForm : Form
                 _settings.MinTrailScale,
                 1.0f);  // bitmaps are already pre-scaled by SkinAssets
 
+            using var cachedGraphics = Graphics.FromImage(_backBuffer!);
+            cachedGraphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            cachedGraphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+
             while (!_stopRender)
             {
                 long frameStart = sw.ElapsedTicks;
@@ -193,76 +198,77 @@ public sealed class OverlayForm : Form
                     NativeMethods.GetCursorPos(out var pt);
                     var pos = new Point(pt.X, pt.Y);
 
-                    lock (_renderLock)
-                    {
-                        if (_backBuffer != null && _trailRenderer != null)
-                        {
-                            using var g = Graphics.FromImage(_backBuffer);
-                            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+                    bool cursorMoved = (pos != _lastRenderPos);
+                    bool needRender = cursorMoved || (_trailRenderer?.HasActiveTrail() ?? false);
 
-                            _trailRenderer.UpdateTrail(pos);
-                            _trailRenderer.DrawFrame(g, pos, w, h);
+                    if (needRender)
+                    {
+                        lock (_renderLock)
+                        {
+                            if (_backBuffer != null && _trailRenderer != null)
+                            {
+                                _trailRenderer.UpdateTrail(pos);
+                                _trailRenderer.DrawFrame(cachedGraphics, pos, w, h);
+                            }
+                        }
+
+                        try
+                        {
+                            IntPtr hdcDst = NativeMethods.GetDC(IntPtr.Zero);
+
+                            var ptSrc = new NativeMethods.POINT { X = 0, Y = 0 };
+                            // Ensure window location coordinates match desktop bounds for multiple monitors
+                            var loc = Location;
+                            var ptLocation = new NativeMethods.POINT { X = loc.X, Y = loc.Y };
+                            var size = new NativeMethods.SIZE { cx = w, cy = h };
+
+                            var blend = new NativeMethods.BLENDFUNCTION
+                            {
+                                BlendOp = NativeMethods.AC_SRC_OVER,
+                                BlendFlags = 0,
+                                SourceConstantAlpha = 255,
+                                AlphaFormat = NativeMethods.AC_SRC_ALPHA
+                            };
+
+                            bool success = NativeMethods.UpdateLayeredWindow(
+                                Handle,
+                                hdcDst,
+                                ref ptLocation,
+                                ref size,
+                                hdcMemory,
+                                ref ptSrc,
+                                0,
+                                ref blend,
+                                NativeMethods.ULW_ALPHA);
+
+                            if (!success)
+                            {
+                                int error = Marshal.GetLastWin32Error();
+                                File.AppendAllText("error_log.txt", $"UpdateLayeredWindow failed: {error}\n");
+                            }
+
+                            NativeMethods.ReleaseDC(IntPtr.Zero, hdcDst);
+
+                            _lastRenderPos = pos;
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            break;
                         }
                     }
 
-                    try
+                    // Re-assert topmost and re-hide system cursors every ~1s
+                    topmostCounter++;
+                    if (topmostCounter >= _settings.TargetFps)
                     {
-                        IntPtr hdcDst = NativeMethods.GetDC(IntPtr.Zero);
-
-                        var ptSrc = new NativeMethods.POINT { X = 0, Y = 0 };
-                        // Ensure window location coordinates match desktop bounds for multiple monitors
-                        var loc = Location; 
-                        var ptLocation = new NativeMethods.POINT { X = loc.X, Y = loc.Y };
-                        var size = new NativeMethods.SIZE { cx = w, cy = h };
-
-                        var blend = new NativeMethods.BLENDFUNCTION
-                        {
-                            BlendOp = NativeMethods.AC_SRC_OVER,
-                            BlendFlags = 0,
-                            SourceConstantAlpha = 255,
-                            AlphaFormat = NativeMethods.AC_SRC_ALPHA
-                        };
-
-                        bool success = NativeMethods.UpdateLayeredWindow(
-                            Handle,
-                            hdcDst,
-                            ref ptLocation,
-                            ref size,
-                            hdcMemory,
-                            ref ptSrc,
-                            0,
-                            ref blend,
-                            NativeMethods.ULW_ALPHA);
-
-                        if (!success)
-                        {
-                            int error = Marshal.GetLastWin32Error();
-                            File.AppendAllText("error_log.txt", $"UpdateLayeredWindow failed: {error}\n");
-                        }
-
-                        NativeMethods.ReleaseDC(IntPtr.Zero, hdcDst);
-
-                        // Re-assert HWND_TOPMOST every frame to stay above context menus
-                        // and other topmost windows with minimal latency.
+                        topmostCounter = 0;
                         NativeMethods.SetWindowPos(
                             Handle,
                             NativeMethods.HWND_TOPMOST,
                             0, 0, 0, 0,
                             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-
-                        // Re-hide system cursors every ~1s (less critical, keep rate-limited)
-                        topmostCounter++;
-                        if (topmostCounter >= _settings.TargetFps)
-                        {
-                            topmostCounter = 0;
-                            if (_settings.HideSystemCursor)
-                                _cursorManager.HideSystemCursors();
-                        }
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        break;
+                        if (_settings.HideSystemCursor)
+                            _cursorManager.HideSystemCursors();
                     }
                 }
                 else
@@ -276,16 +282,9 @@ public sealed class OverlayForm : Form
 
                 if (remaining > 0)
                 {
-                    long sleepMs = (remaining * 1000L / Stopwatch.Frequency) - 1;
-                    if (sleepMs > 0)
-                    {
+                    long sleepMs = remaining * 1000L / Stopwatch.Frequency;
+                    if (sleepMs > 1)
                         Thread.Sleep((int)sleepMs);
-                    }
-
-                    while (sw.ElapsedTicks - frameStart < frameTicks)
-                    {
-                        // Spin wait
-                    }
                 }
             }
 
