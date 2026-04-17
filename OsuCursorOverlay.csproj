@@ -10,6 +10,10 @@
     <RootNamespace>OsuCursorOverlay</RootNamespace>
     <Version>1.0.1</Version>
     <Optimize>true</Optimize>
+    <!-- Single-file self-contained executable -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <!-- Embed the manifest to enable UIAccess for system window overlays -->
     <ApplicationManifest>OsuCursorOverlay.manifest</ApplicationManifest>
     <!-- Handle DPI awareness via API instead of manifest -->

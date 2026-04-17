@@ -24,17 +24,20 @@ jobs:
     - name: Build (Release)
       run: dotnet build --configuration Release --no-restore
 
+    - name: Publish single-file executable
+      run: dotnet publish --configuration Release --no-restore --self-contained --publish-single-file -o publish
+
     - name: Submit to SignPath
       shell: pwsh
       run: |
         Install-Module -Name SignPath -Force
         Submit-SigningRequest `
-          -InputArtifactPath "bin/Release/net8.0-windows/OsuCursorOverlay.exe" `
+          -InputArtifactPath "publish/OsuCursorOverlay.exe" `
           -ApiToken "${{ secrets.SIGNPATH_API_TOKEN }}" `
           -OrganizationId "40cf082b-addb-4383-b3b5-1e905c07a4a9" `
           -ProjectSlug "Osu_Cursor_Overlay" `
           -SigningPolicySlug "Default" `
-          -OutputArtifactPath "bin/Release/net8.0-windows/OsuCursorOverlay.exe" `
+          -OutputArtifactPath "publish/OsuCursorOverlay.exe" `
           -WaitForCompletion `
           -Force
 
@@ -42,13 +45,13 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: signed-exe
-        path: bin/Release/net8.0-windows/OsuCursorOverlay.exe
+        path: publish/OsuCursorOverlay.exe
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: bin/Release/net8.0-windows/OsuCursorOverlay.exe
+        files: publish/OsuCursorOverlay.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
