@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
-  <pe-file>
+  <pe-file> <!-- optionally, add metadata constraints: product-name, product-version, file-version, company-name, copyright, original-filename -->
     <authenticode-sign />
   </pe-file>
 </artifact-configuration>

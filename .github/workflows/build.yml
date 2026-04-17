@@ -24,9 +24,21 @@ jobs:
     - name: Build (Release)
       run: dotnet build --configuration Release --no-restore
 
-    - name: Upload unsigned executable to SignPath
+    - name: Submit to SignPath
+      shell: pwsh
+      run: |
+        Submit-SigningRequest `
+          -InputArtifactPath "bin/Release/net8.0-windows/OsuCursorOverlay.exe" `
+          -ApiToken "${{ secrets.SIGNPATH_API_TOKEN }}" `
+          -OrganizationId "40cf082b-addb-4383-b3b5-1e905c07a4a9" `
+          -ProjectSlug "Osu_Cursor_Overlay" `
+          -SigningPolicySlug "Default" `
+          -OutputArtifactPath "bin/Release/net8.0-windows/OsuCursorOverlay.exe" `
+          -WaitForCompletion
+
+    - name: Upload signed executable
       uses: actions/upload-artifact@v4
       with:
-        name: unsigned-exe
+        name: signed-exe
         path: bin/Release/net8.0-windows/OsuCursorOverlay.exe
-        if-no-files-found: error
+
