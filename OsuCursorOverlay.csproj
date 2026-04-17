@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>OsuCursorOverlay</AssemblyName>
     <RootNamespace>OsuCursorOverlay</RootNamespace>
+    <Version>1.0.1</Version>
     <Optimize>true</Optimize>
     <!-- Embed the manifest to enable UIAccess for system window overlays -->
     <ApplicationManifest>OsuCursorOverlay.manifest</ApplicationManifest>
