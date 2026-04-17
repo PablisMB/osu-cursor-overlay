@@ -57,7 +57,7 @@ internal static class Program
         string selectedSkinName = "";
         string selectedSkinPath = "";
 
-        // Try to use last saved skin
+        // Try to use last saved skin — skip selector if valid
         if (!string.IsNullOrEmpty(settings.LastSkinName))
         {
             var lastSkinPath = Path.Combine(skinsDir, settings.LastSkinName);
@@ -68,15 +68,16 @@ internal static class Program
             }
         }
 
-        // If no valid last skin, show selector
+        // Show selector if no valid last skin
         if (string.IsNullOrEmpty(selectedSkinName))
         {
-            using var selectorForm = new SkinSelectorForm(skinsDir, skins);
+            using var selectorForm = new SkinSelectorForm(skinsDir, skins, settings, configPath);
             if (selectorForm.ShowDialog() != DialogResult.OK)
                 return;
 
-            selectedSkinName = selectorForm.SelectedSkinName;
-            selectedSkinPath = selectorForm.SelectedSkinPath;
+            selectedSkinName = selectorForm.SelectedSkinName ?? "";
+            selectedSkinPath = selectorForm.SelectedSkinPath ?? "";
+            settings         = selectorForm.FinalSettings;
 
             if (string.IsNullOrEmpty(selectedSkinName) || string.IsNullOrEmpty(selectedSkinPath))
                 return;

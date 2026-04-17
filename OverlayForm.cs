@@ -60,9 +60,10 @@ public sealed class OverlayForm : Form
         RegisterExitHotkey();
         BuildTrayIcon();
 
-        // Save the current skin name to config so it loads next time
+        // Persist skin name so next launch skips the selector
         var configPath = Path.Combine(AppContext.BaseDirectory, "config.ini");
-        ConfigManager.SaveSkinName(configPath, _skinName);
+        _settings.LastSkinName = _skinName;
+        ConfigManager.Save(configPath, _settings);
 
         // Spawn watchdog here so we can pass the overlay HWND.
         // The watchdog will restore the system cursor if we hang or are force-killed.
@@ -262,16 +263,18 @@ public sealed class OverlayForm : Form
                         }
                     }
 
-                    // Re-assert topmost and re-hide system cursors every ~1s
+                    // Re-assert topmost every frame to stay above taskbar previews
+                    NativeMethods.SetWindowPos(
+                        Handle,
+                        NativeMethods.HWND_TOPMOST,
+                        0, 0, 0, 0,
+                        NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+
+                    // Re-hide system cursors every ~1s
                     topmostCounter++;
                     if (topmostCounter >= _settings.TargetFps)
                     {
                         topmostCounter = 0;
-                        NativeMethods.SetWindowPos(
-                            Handle,
-                            NativeMethods.HWND_TOPMOST,
-                            0, 0, 0, 0,
-                            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
                         if (_settings.HideSystemCursor)
                             _cursorManager.HideSystemCursors();
                     }
@@ -408,13 +411,12 @@ public sealed class OverlayForm : Form
         bool enabled = !IsAutoStartEnabled();
         SetAutoStartWithWindows(enabled);
 
+        _settings.AutoStartWithWindows = enabled;
         var configPath = Path.Combine(AppContext.BaseDirectory, "config.ini");
-        ConfigManager.SaveAutoStartSetting(configPath, enabled);
+        ConfigManager.Save(configPath, _settings);
 
         if (_trayMenu?.Items.Cast<ToolStripItem>().FirstOrDefault(x => x.Text == "Iniciar con Windows") is ToolStripMenuItem item)
-        {
             item.Checked = enabled;
-        }
     }
 
     private void OnTrayExit(object? sender, EventArgs e)

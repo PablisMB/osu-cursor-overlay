@@ -143,79 +143,24 @@ public static class ConfigManager
         settings.HotkeyVKey = vkey ?? Keys.Q;
     }
 
-    public static void SaveSkinName(string path, string skinName)
+    public static void Save(string path, AppSettings s)
     {
-        if (!File.Exists(path))
-            return;
-
-        var content = File.ReadAllText(path);
-        var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
-
-        bool inSystemSection = false;
-        bool found = false;
-
-        for (int i = 0; i < lines.Count; i++)
+        var content = string.Join("\n", new[]
         {
-            var trimmed = lines[i].Trim();
-
-            if (trimmed == "[system]")
-            {
-                inSystemSection = true;
-                continue;
-            }
-
-            if (inSystemSection && trimmed.StartsWith('['))
-                inSystemSection = false;
-
-            if (inSystemSection && trimmed.StartsWith("last_skin_name"))
-            {
-                lines[i] = $"last_skin_name = {skinName}";
-                found = true;
-                break;
-            }
-        }
-
-        if (!found && inSystemSection)
-            lines.Add($"last_skin_name = {skinName}");
-
-        File.WriteAllText(path, string.Join("\n", lines));
-    }
-
-    public static void SaveAutoStartSetting(string path, bool enabled)
-    {
-        if (!File.Exists(path))
-            return;
-
-        var content = File.ReadAllText(path);
-        var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
-
-        bool inSystemSection = false;
-        bool found = false;
-
-        for (int i = 0; i < lines.Count; i++)
-        {
-            var trimmed = lines[i].Trim();
-
-            if (trimmed == "[system]")
-            {
-                inSystemSection = true;
-                continue;
-            }
-
-            if (inSystemSection && trimmed.StartsWith('['))
-                inSystemSection = false;
-
-            if (inSystemSection && trimmed.StartsWith("auto_start_with_windows"))
-            {
-                lines[i] = $"auto_start_with_windows = {(enabled ? "true" : "false")}";
-                found = true;
-                break;
-            }
-        }
-
-        if (!found && inSystemSection)
-            lines.Add($"auto_start_with_windows = {(enabled ? "true" : "false")}");
-
-        File.WriteAllText(path, string.Join("\n", lines));
+            "[cursor]",
+            $"scale = {s.Scale.ToString("F2", CultureInfo.InvariantCulture)}",
+            $"trail_length = {s.TrailLength}",
+            $"max_trail_alpha = {s.MaxTrailAlpha}",
+            $"min_trail_scale = {s.MinTrailScale.ToString("F2", CultureInfo.InvariantCulture)}",
+            $"trail_spacing = {s.TrailSpacing.ToString("F2", CultureInfo.InvariantCulture)}",
+            "",
+            "[system]",
+            $"target_fps = {s.TargetFps}",
+            $"hide_system_cursor = {s.HideSystemCursor.ToString().ToLower()}",
+            $"exit_hotkey = {s.ExitHotkey}",
+            $"auto_start_with_windows = {s.AutoStartWithWindows.ToString().ToLower()}",
+            $"last_skin_name = {s.LastSkinName}"
+        });
+        File.WriteAllText(path, content);
     }
 }
