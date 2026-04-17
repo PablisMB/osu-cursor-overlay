@@ -1,0 +1,42 @@
+# Build artifacts
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# NuGet
+*.nuget.props
+*.nuget.targets
+project.assets.json
+project.nuget.cache
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Sensitive files
+*.pfx
+*.snk
+*.jks
+
+# Runtime/User files
+config.ini
+*.mp4
+
+# Claude Code local config
+.claude/settings.local.json
+.claude/plans/
+.claude/worktrees/
+
+# Temporary files
+*.tmp
+*.log
+.DS_Store

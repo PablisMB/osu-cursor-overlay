@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>osu! Trail Simulator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #sidebar {
+    width: 300px;
+    min-width: 300px;
+    background: #111118;
+    border-right: 1px solid #2a2a3a;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+  }
+
+  h1 {
+    font-size: 16px;
+    color: #ffcc00;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #6666aa;
+    margin-top: 14px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #2a2a3a;
+    padding-bottom: 4px;
+  }
+
+  .control {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .control label {
+    font-size: 12px;
+    color: #aaa;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .control label span {
+    color: #ffcc00;
+    font-weight: bold;
+    font-family: monospace;
+  }
+
+  input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    background: #2a2a3a;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffcc00;
+    cursor: pointer;
+  }
+
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: none;
+  }
+
+  .hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,204,0,0.1);
+    border: 1px solid rgba(255,204,0,0.3);
+    color: #ffcc00;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 12px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  #config-output {
+    background: #0d0d18;
+    border: 1px solid #2a2a3a;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #88ff88;
+    white-space: pre;
+    margin-top: 10px;
+  }
+
+  button {
+    background: #ffcc00;
+    color: #000;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+    margin-top: 6px;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button:active { opacity: 0.7; }
+
+  .mode-btn {
+    background: #2a2a3a;
+    color: #aaa;
+    flex: 1;
+  }
+  .mode-btn.active {
+    background: #ffcc00;
+    color: #000;
+  }
+  .mode-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1>🎯 Trail Simulator</h1>
+  <p style="font-size:11px;color:#666;margin-bottom:4px">Mueve el ratón por el lienzo →</p>
+
+  <div class="section-title">Generación</div>
+
+  <div class="control">
+    <label>Intervalo (px) <span id="val-interval">28</span></label>
+    <input type="range" id="interval" min="2" max="80" value="28">
+  </div>
+
+  <div class="section-title">Ciclo de Vida</div>
+
+  <div class="control">
+    <label>Duración Fade (ms) <span id="val-fadeDur">300</span></label>
+    <input type="range" id="fadeDur" min="50" max="800" value="300">
+  </div>
+
+  <div class="control">
+    <label>Fade Exponent <span id="val-fadeExp">1.0</span></label>
+    <input type="range" id="fadeExp" min="0.5" max="3.0" step="0.1" value="1.0">
+  </div>
+
+  <div class="control">
+    <label>Alpha máximo (%) <span id="val-maxAlpha">100</span></label>
+    <input type="range" id="maxAlpha" min="10" max="100" value="100">
+  </div>
+
+  <div class="section-title">Escala del Sello</div>
+
+  <div class="control">
+    <label>Escala inicial (%) <span id="val-initScale">90</span></label>
+    <input type="range" id="initScale" min="30" max="150" value="90">
+  </div>
+
+  <div class="control">
+    <label>Escala final / Shrink mín (%) <span id="val-minScale">30</span></label>
+    <input type="range" id="minScale" min="0" max="100" value="30">
+  </div>
+
+  <div class="control">
+    <label>Shrink Exponent <span id="val-shrinkExp">1.0</span></label>
+    <input type="range" id="shrinkExp" min="0.3" max="3.0" step="0.1" value="1.0">
+  </div>
+
+  <div class="section-title">Visualización</div>
+
+  <div class="control">
+    <label>Tamaño cursor (px) <span id="val-cursorSize">64</span></label>
+    <input type="range" id="cursorSize" min="16" max="128" value="64">
+  </div>
+
+  <div class="mode-row">
+    <button class="mode-btn active" id="mode-circle" onclick="setMode('circle')">Círculo</button>
+    <button class="mode-btn" id="mode-glow" onclick="setMode('glow')">Glow</button>
+    <button class="mode-btn" id="mode-dot" onclick="setMode('dot')">Punto</button>
+  </div>
+
+  <div class="section-title">Config.ini equivalente</div>
+  <div id="config-output"></div>
+  <button onclick="copyConfig()">📋 Copiar Config</button>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+  <div class="hint">Mueve el ratón aquí para ver el trail</div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvas-wrap');
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let parts = [];
+let lastPos = null;
+let lastStampPos = null;
+let mousePos = { x: -999, y: -999 };
+let mode = 'circle';
+
+// ─── Params (live) ───────────────────────────────────────────────────────────
+let P = {
+  interval:   28,
+  fadeDur:    300,
+  fadeExp:    1.0,
+  maxAlpha:   100,
+  initScale:  0.90,
+  minScale:   0.30,
+  shrinkExp:  1.0,
+  cursorSize: 64,
+};
+
+// ─── Slider wiring ───────────────────────────────────────────────────────────
+function wire(id, key, factor = 1, decimals = 0) {
+  const el = document.getElementById(id);
+  const val = document.getElementById('val-' + id);
+  el.addEventListener('input', () => {
+    const raw = parseFloat(el.value);
+    P[key] = raw / factor;
+    val.textContent = decimals > 0 ? (raw / factor).toFixed(decimals) : raw;
+    updateConfig();
+  });
+}
+
+wire('interval',   'interval',  1,   0);
+wire('fadeDur',    'fadeDur',   1,   0);
+wire('fadeExp',    'fadeExp',   1,   1);
+wire('maxAlpha',   'maxAlpha',  1,   0);
+wire('initScale',  'initScale', 100, 0);
+wire('minScale',   'minScale',  100, 0);
+wire('shrinkExp',  'shrinkExp', 1,   1);
+wire('cursorSize', 'cursorSize',1,   0);
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode-' + m).classList.add('active');
+}
+
+// ─── Resize ──────────────────────────────────────────────────────────────────
+function resize() {
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ─── Mouse ───────────────────────────────────────────────────────────────────
+wrap.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const y = e.clientY - r.top;
+  mousePos = { x, y };
+
+  if (!lastStampPos) {
+    lastStampPos = { x, y };
+    return;
+  }
+
+  // Distance-based stamp generation
+  const dx = x - lastStampPos.x;
+  const dy = y - lastStampPos.y;
+  const dist = Math.hypot(dx, dy);
+
+  if (dist < P.interval) return;
+
+  const steps = Math.floor(dist / P.interval);
+  const dirX = dx / dist;
+  const dirY = dy / dist;
+
+  for (let i = 1; i <= steps; i++) {
+    const px = lastStampPos.x + dirX * P.interval * i;
+    const py = lastStampPos.y + dirY * P.interval * i;
+    parts.push({ x: px, y: py, born: performance.now() });
+  }
+
+  lastStampPos = {
+    x: lastStampPos.x + dirX * P.interval * steps,
+    y: lastStampPos.y + dirY * P.interval * steps,
+  };
+
+  // Cap parts to prevent memory leak
+  if (parts.length > 2000) parts.splice(0, parts.length - 2000);
+});
+
+wrap.addEventListener('mouseleave', () => {
+  mousePos = { x: -9999, y: -9999 };
+  lastStampPos = null;
+});
+
+// ─── Drawing helpers ─────────────────────────────────────────────────────────
+function drawCursorCircle(x, y, size) {
+  // Outer glow
+  const g = ctx.createRadialGradient(x, y, 0, x, y, size * 0.6);
+  g.addColorStop(0,   'rgba(255,255,255,0.0)');
+  g.addColorStop(0.5, 'rgba(255,255,255,0.0)');
+  g.addColorStop(1,   'rgba(255,200,0,0.5)');
+  ctx.beginPath();
+  ctx.arc(x, y, size * 0.6, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  // White circle with yellow border
+  ctx.beginPath();
+  ctx.arc(x, y, size * 0.32, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.fill();
+  ctx.strokeStyle = '#ffcc00';
+  ctx.lineWidth = size * 0.08;
+  ctx.stroke();
+}
+
+function drawTrailStamp(x, y, size, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  if (mode === 'circle') {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, size * 0.5);
+    g.addColorStop(0,   'rgba(255,220,80,0.95)');
+    g.addColorStop(0.6, 'rgba(255,180,20,0.7)');
+    g.addColorStop(1,   'rgba(255,140,0,0.0)');
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  } else if (mode === 'glow') {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, size * 0.5);
+    g.addColorStop(0,   'rgba(255,255,255,1)');
+    g.addColorStop(0.4, 'rgba(255,220,80,0.6)');
+    g.addColorStop(1,   'rgba(255,180,0,0.0)');
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffcc00';
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// ─── Main loop ───────────────────────────────────────────────────────────────
+function loop() {
+  requestAnimationFrame(loop);
+
+  const now = performance.now();
+  const fadeDurMs = P.fadeDur;
+
+  // Clear
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw trail stamps (oldest first so newer ones render on top)
+  const alive = [];
+  for (const p of parts) {
+    const age = now - p.born;
+    if (age >= fadeDurMs) continue;  // expired
+
+    alive.push(p);
+
+    // timeAlive: 1.0 when just born, 0.0 when about to expire
+    const timeAlive = 1.0 - (age / fadeDurMs);
+
+    const fadeProgress  = Math.pow(Math.max(0, timeAlive), P.fadeExp);
+    const shrinkProgress = Math.pow(Math.max(0, timeAlive), P.shrinkExp);
+
+    const alpha = (P.maxAlpha / 100) * fadeProgress;
+    const scale = P.minScale + (P.initScale - P.minScale) * shrinkProgress;
+    const partSize = P.cursorSize * scale;
+
+    drawTrailStamp(p.x, p.y, partSize, alpha);
+  }
+  parts = alive;
+
+  // Draw cursor on top
+  if (mousePos.x > 0) {
+    drawCursorCircle(mousePos.x, mousePos.y, P.cursorSize);
+  }
+}
+
+// ─── Config output ────────────────────────────────────────────────────────────
+function updateConfig() {
+  const out = document.getElementById('config-output');
+  out.textContent = `[cursor]
+scale         = 1.0
+trail_length  = 30
+trail_spacing = ${(P.interval / (P.cursorSize * 0.9 / 2.5)).toFixed(2)}
+max_trail_alpha = ${P.maxAlpha}
+min_trail_scale = ${P.minScale.toFixed(2)}
+; fade_duration = ${P.fadeDur} ms
+; fade_exp = ${P.fadeExp.toFixed(1)}
+; shrink_exp = ${P.shrinkExp.toFixed(1)}`;
+}
+
+function copyConfig() {
+  const text = document.getElementById('config-output').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('button:last-of-type');
+    btn.textContent = '✅ Copiado!';
+    setTimeout(() => btn.textContent = '📋 Copiar Config', 1500);
+  });
+}
+
+updateConfig();
+loop();
+</script>
+</body>
+</html>

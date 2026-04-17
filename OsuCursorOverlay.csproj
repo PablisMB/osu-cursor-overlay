@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>OsuCursorOverlay</AssemblyName>
+    <RootNamespace>OsuCursorOverlay</RootNamespace>
+    <Optimize>true</Optimize>
+    <!-- Embed the manifest to enable UIAccess for system window overlays -->
+    <ApplicationManifest>OsuCursorOverlay.manifest</ApplicationManifest>
+    <!-- Handle DPI awareness via API instead of manifest -->
+    <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Reference files only - not part of this project's compilation -->
+    <Compile Remove="OsuCursorCode\**" />
+  </ItemGroup>
+
+  <!-- Post-build target to sign the executable with SignTool (local development only) -->
+  <!-- Disabled for CI/CD — SignPath handles signing in GitHub Actions -->
+  <!-- Uncomment locally if Windows SDK is installed with signtool.exe -->
+  <!--
+  <Target Name="SignExecutable" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <Exec Command="&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.28000.0\x64\signtool.exe&quot; sign /sha1 8F387E0BD3F0143741FB1C152C65A15BCC56234B /tr http://timestamp.digicert.com /td sha256 /fd sha256 &quot;$(OutDir)$(AssemblyName).exe&quot;" ContinueOnError="true" />
+  </Target>
+  -->
+</Project>
