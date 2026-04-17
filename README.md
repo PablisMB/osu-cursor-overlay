@@ -4,13 +4,13 @@ A complete rewrite of the Python pygame cursor overlay in C# to eliminate graphi
 
 ## Features
 
-- ✅ **Transparent Overlay** — Pure black background is fully transparent; clicks pass through
-- ✅ **Real osu! Skins** — Load cursor.png and cursortrail.png from any osu! skin folder
-- ✅ **144 FPS** — Dedicated render thread + Stopwatch spin-wait for accurate timing
-- ✅ **System Tray** — Pause/resume overlay, open config, or exit from context menu
-- ✅ **Global Hotkey** — Ctrl+Shift+Q to exit (configurable in config.ini)
-- ✅ **System Cursor Hidden** — All 12 Windows cursor types replaced; restored on exit
-- ✅ **Alpha-Blended Trail** — Fades from oldest (transparent) to newest (opaque); scales smallest to largest
+- **Transparent Overlay** — Pure black background is fully transparent; clicks pass through
+- **Real osu! Skins** — Load cursor.png and cursortrail.png from any osu! skin folder
+- **144 FPS** — Dedicated render thread + Stopwatch spin-wait for accurate timing
+- **System Tray** — Pause/resume overlay, open config, or exit from context menu
+- **Global Hotkey** — Ctrl+Shift+Q to exit (configurable in config.ini)
+- **System Cursor Hidden** — All 12 Windows cursor types replaced; restored on exit
+- **Alpha-Blended Trail** — Fades from oldest (transparent) to newest (opaque); scales smallest to largest
 
 ## Architecture
 
