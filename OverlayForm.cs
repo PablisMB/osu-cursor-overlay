@@ -408,6 +408,9 @@ public sealed class OverlayForm : Form
         bool enabled = !IsAutoStartEnabled();
         SetAutoStartWithWindows(enabled);
 
+        var configPath = Path.Combine(AppContext.BaseDirectory, "config.ini");
+        ConfigManager.SaveAutoStartSetting(configPath, enabled);
+
         if (_trayMenu?.Items.Cast<ToolStripItem>().FirstOrDefault(x => x.Text == "Iniciar con Windows") is ToolStripMenuItem item)
         {
             item.Checked = enabled;

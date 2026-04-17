@@ -180,4 +180,42 @@ public static class ConfigManager
 
         File.WriteAllText(path, string.Join("\n", lines));
     }
+
+    public static void SaveAutoStartSetting(string path, bool enabled)
+    {
+        if (!File.Exists(path))
+            return;
+
+        var content = File.ReadAllText(path);
+        var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+
+        bool inSystemSection = false;
+        bool found = false;
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            var trimmed = lines[i].Trim();
+
+            if (trimmed == "[system]")
+            {
+                inSystemSection = true;
+                continue;
+            }
+
+            if (inSystemSection && trimmed.StartsWith('['))
+                inSystemSection = false;
+
+            if (inSystemSection && trimmed.StartsWith("auto_start_with_windows"))
+            {
+                lines[i] = $"auto_start_with_windows = {(enabled ? "true" : "false")}";
+                found = true;
+                break;
+            }
+        }
+
+        if (!found && inSystemSection)
+            lines.Add($"auto_start_with_windows = {(enabled ? "true" : "false")}");
+
+        File.WriteAllText(path, string.Join("\n", lines));
+    }
 }
